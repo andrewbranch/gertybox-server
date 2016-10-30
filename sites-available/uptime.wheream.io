@@ -1,0 +1,33 @@
+# Redirect all non-encrypted to encrypted
+server {
+    server_name ~^uptime\.wheream\.io$;
+
+    listen *:80;
+    listen [::]:80;
+
+    return 301 https://uptime.wheream.io$request_uri;
+}
+
+server {
+    server_name ~^uptime\.wheream\.io$;
+    listen *:443 ssl spdy;
+    listen [::]:443 ssl spdy;
+    
+    ssl_certificate /data/uptime.wheream.io/fullchain.pem;
+    ssl_certificate_key /data/uptime.wheream.io/privkey.pem;
+    add_header Strict-Transport-Security "max-age=31536000";
+
+    location / {
+        proxy_pass http://uptime:$UPTIME_PORT;
+
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header Host              $http_host;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-NginX-Proxy     true;
+
+        proxy_pass_header X-CSRF-TOKEN;
+        proxy_buffering off;
+        proxy_redirect off;
+    }
+}
